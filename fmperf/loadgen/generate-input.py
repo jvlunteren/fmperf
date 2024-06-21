@@ -31,6 +31,7 @@ args = parser.parse_args()
 
 def get_streaming_response(response: requests.Response):
     finished = False
+    prev_completion_tokens = 0
     for chunk in response.iter_lines(
         chunk_size=8192, decode_unicode=False, delimiter=b"\n"
     ):
@@ -38,8 +39,17 @@ def get_streaming_response(response: requests.Response):
             data = chunk.decode("utf-8").strip().split("data: ")[1]
             out = json.loads(data)["choices"][0]
             finished = out["finish_reason"] is not None
-            if not (out['text'] == ''): # filter empty tokens
-                yield out
+            usage = json.loads(data)["usage"]
+            token_count = usage["completion_tokens"] - prev_completion_tokens
+            prev_completion_tokens = usage["completion_tokens"]
+            for i in range(token_count):
+                yield {
+                    'index': out['index'],
+                    'text': '' if (i < token_count - 1) else out['text'],
+                    'logprobs': None,
+                    'finish_reason': None if (i < token_count - 1) else out['finish_reason'],
+                    'stop_reason': None if (i < token_count - 1) else out['stop_reason']
+                }
 
 
 def get_text():
@@ -72,6 +82,7 @@ def generate_vllm_request(config, url):
         "ignore_eos": True,
         "max_tokens": config["out_tokens"],
         "stream": True,
+        "stream_options" : {"continuous_usage_stats": True},
     }
 
     if not args.from_model:
