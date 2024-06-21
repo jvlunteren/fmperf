@@ -82,7 +82,7 @@ def generate_vllm_request(config, url):
         "ignore_eos": True,
         "max_tokens": config["out_tokens"],
         "stream": True,
-        "stream_options" : {"continuous_usage_stats": True},
+        "stream_options" : { "include_usage": True, "continuous_usage_stats": True }
     }
 
     if not args.from_model:
