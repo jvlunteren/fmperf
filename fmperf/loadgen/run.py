@@ -44,6 +44,10 @@ def run():
         while not stop:
             try:
                 chunk = next(response_iter)
+                #print()
+                #print('chunk=', end='')
+                #print(chunk)
+                #print()
                 timestamp = time.time_ns()
                 if chunk and not stop:
                     data = chunk.decode("utf-8").strip().split("data: ")[1]
